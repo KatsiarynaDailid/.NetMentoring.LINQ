@@ -243,10 +243,95 @@ namespace SampleQueries
 
         [Category("Restriction Operators")]
         [Title("Task 8")]
-        [Description("This sample return grouped list of products by category, then by availability and sorted by price.")]
+        [Description("This sample return grouped list of products by 3 categories: cheep, middle, expensive.")]
         public void Linq008()
         {
+            int cheepBoundary = 20;
+            int middleBoundary = 40;
 
+            var groups = dataSource.Products.GroupBy(x => x.UnitPrice < cheepBoundary ? "Cheep"
+            : x.UnitPrice < middleBoundary ? "Middle" : "Expensive");
+
+            foreach (var g in groups)
+            {
+                ObjectDumper.Write(g.Key);
+                foreach (var p in g)
+                {
+                    ObjectDumper.Write($"Product {p.ProductName} Price {p.UnitPrice}.");
+                }
+            }
+        }
+
+        [Category("Restriction Operators")]
+        [Title("Task 9")]
+        [Description("This sample return average income and intensity by town.")]
+        public void Linq009()
+        {
+            var statistics = dataSource.Customers.GroupBy(x => x.City)
+                .Select(c => new
+                {
+                    City = c.Key,
+                    AverageIncome = c.Where(i => i.Orders.Count() > 0)
+                    .Select(i => i.Orders
+                    .Select(p => p.Total).Average()).Average(),
+                    AverageIntensity = c.Where(i => i.Orders.Count() > 0)
+                    .Select(i => i.Orders.Count()).Average()
+                });
+
+            foreach (var g in statistics)
+            {
+                ObjectDumper.Write($"City: {g.City}; Average income: {String.Format("{0:0.000}", g.AverageIncome)};" +
+                    $" Average intensity: {String.Format("{0:0.00}", g.AverageIntensity)}");
+            }
+        }
+
+        [Category("Restriction Operators")]
+        [Title("Task 10")]
+        [Description("This sample return statistics of client activities(count of orders) by Month, by Year, by Month and Year.")]
+        public void Linq010()
+        {
+            var statistics = dataSource.Customers
+                .Select(c => new
+                {
+                    c.CustomerID,
+                    ByMonth = c.Orders.GroupBy(x => x.OrderDate.Month).Select(x => new
+                    {
+                        Month = x.Key,
+                        CountOfOrders = x.Count()
+                    }),
+                    ByYear = c.Orders.GroupBy(x => x.OrderDate.Year).Select(x => new
+                    {
+                        Year = x.Key,
+                        CountOfOrders = x.Count()
+                    }),
+                    ByMonthAndYear = c.Orders.GroupBy(x => new { x.OrderDate.Month, x.OrderDate.Year }).Select(x => new
+                    {
+                        x.Key.Month,
+                        x.Key.Year,
+                        CountOfOrders = x.Count()
+                    })
+                });
+
+            foreach (var s in statistics)
+            {
+                ObjectDumper.Write($"Customer {s.CustomerID}");
+                ObjectDumper.Write($"Statistics by Month:");
+                foreach (var m in s.ByMonth)
+                {
+                    ObjectDumper.Write($"Month: {m.Month}; Activity: {m.CountOfOrders}");
+                }
+                ObjectDumper.Write($"Statistics by Year:");
+                foreach (var y in s.ByYear)
+                {
+                    ObjectDumper.Write($"Year: {y.Year}; Activity: {y.CountOfOrders}");
+                }
+                ObjectDumper.Write($"Statistics by Month and Year:");
+                foreach (var my in s.ByMonthAndYear)
+                {
+                    ObjectDumper.Write($"Month: {my.Month}; Year {my.Year}; Activity: {my.CountOfOrders}");
+                }
+                ObjectDumper.Write($"------------//------------");
+            }
         }
     }
 }
